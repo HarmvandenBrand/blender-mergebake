@@ -1,1 +1,1 @@
-from .src.mergebake import *
+from .mergebake import *

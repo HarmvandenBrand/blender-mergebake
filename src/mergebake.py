@@ -202,14 +202,14 @@ class MERGEBAKE_PT_panel(bpy.types.Panel):
     bl_idname = "MERGEBAKE_PT_tools"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Export Tools"
+    bl_category = "Mergebake"
 
 
     def draw(self, context: bpy.types.Context):
 
         layout = self.layout
 
-        props = context.scene.mergebake
+        props = context.scene.mergebake_tools
 
         layout.prop(
             props,
