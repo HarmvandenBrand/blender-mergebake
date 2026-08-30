@@ -3,7 +3,7 @@ import logging
 import bpy
 
 from .bake_materials import bake_materials
-from .constants import _EXPORT_MESH_NAME
+from .constants import EXPORT_MESH_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # Properties
 # ------------------------------------------------------------
 
-class FinalizerProperties(bpy.types.PropertyGroup):
+class MergebakeProperties(bpy.types.PropertyGroup):
     
     source_collection: bpy.props.PointerProperty(
         name="Source Collection",
@@ -70,9 +70,9 @@ class FinalizerProperties(bpy.types.PropertyGroup):
 # Operator
 # ------------------------------------------------------------
 
-class FINALIZER_OT_build_mesh(bpy.types.Operator):
-    bl_idname = "finalizer_tools.build_mesh"
-    bl_label = "Finalize Collection to Export Mesh"
+class MERGEBAKE_OT_build_mesh(bpy.types.Operator):
+    bl_idname = "mergebake_tools.build_mesh"
+    bl_label = "Join and bake collection to Export Mesh"
     bl_description = "Duplicate objects, apply modifiers, and join"
 
     def execute(self, context: bpy.types.Context|None):
@@ -81,7 +81,7 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
             self.report({'ERROR'}, "Context is None")
             return {'CANCELLED'}
 
-        props = context.scene.finalizer_tools
+        props = context.scene.mergebake_tools
 
         collection : bpy.types.Collection = props.source_collection
 
@@ -95,7 +95,7 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
 
         # Remove previous export object
 
-        old = bpy.data.objects.get(_EXPORT_MESH_NAME)
+        old = bpy.data.objects.get(EXPORT_MESH_NAME)
 
         if old:
             bpy.data.objects.remove(
@@ -171,7 +171,7 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
         bpy.ops.object.join()
 
         export_obj = context.object
-        export_obj.name = _EXPORT_MESH_NAME
+        export_obj.name = EXPORT_MESH_NAME
 
 
         # Bake materials
@@ -196,10 +196,10 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
 # Panel
 # ------------------------------------------------------------
 
-class FINALIZER_PT_panel(bpy.types.Panel):
+class MERGEBAKE_PT_panel(bpy.types.Panel):
 
-    bl_label = "Export Tools"
-    bl_idname = "EXPORT_PT_tools"
+    bl_label = "Mergebake"
+    bl_idname = "MERGEBAKE_PT_tools"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Export Tools"
@@ -209,7 +209,7 @@ class FINALIZER_PT_panel(bpy.types.Panel):
 
         layout = self.layout
 
-        props = context.scene.finalizer_tools
+        props = context.scene.mergebake
 
         layout.prop(
             props,
@@ -237,7 +237,7 @@ class FINALIZER_PT_panel(bpy.types.Panel):
         bake_box.prop(props, "save_textures_dir")
 
         layout.operator(
-            "finalizer_tools.build_mesh",
+            "mergebake_tools.build_mesh",
             icon="EXPORT"
         )
 
@@ -247,9 +247,9 @@ class FINALIZER_PT_panel(bpy.types.Panel):
 # ------------------------------------------------------------
 
 classes = (
-    FinalizerProperties,
-    FINALIZER_OT_build_mesh,
-    FINALIZER_PT_panel,
+    MergebakeProperties,
+    MERGEBAKE_OT_build_mesh,
+    MERGEBAKE_PT_panel,
 )
 
 
@@ -258,8 +258,8 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.finalizer_tools = bpy.props.PointerProperty(
-        type=FinalizerProperties
+    bpy.types.Scene.mergebake_tools = bpy.props.PointerProperty(
+        type=MergebakeProperties
     )
 
 
@@ -268,7 +268,7 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    del bpy.types.Scene.finalizer_tools
+    del bpy.types.Scene.mergebake_tools
 
 
 

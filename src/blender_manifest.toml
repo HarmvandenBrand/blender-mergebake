@@ -2,10 +2,10 @@ schema_version = "1.0.0"
 
 # Example of manifest file for a Blender extension
 # Change the values according to your extension
-id = "collection_finalizer"
-version = "1.1.0"
-name = "Collection Finalizer"
-tagline = "Apply and join a collection for export"
+id = "mergebake"
+version = "1.1.1"
+name = "Mergebake"
+tagline = "Apply, join and bake a collection of objects in one click"
 maintainer = "Harm van den Brand"
 # Supported types: "add-on", "theme"
 type = "add-on"

@@ -2,7 +2,7 @@ import os
 
 import bpy
 
-from .constants import _BAKE_EMIT_NODE, _BAKE_TARGET_NODE, _EXPORT_MESH_NAME
+from .constants import BAKE_EMIT_NODE, BAKE_TARGET_NODE, EXPORT_MESH_NAME
 
 
 def _find_principled(node_tree):
@@ -46,10 +46,10 @@ def _set_bake_target(material, image):
 
     node_tree = material.node_tree
 
-    node = node_tree.nodes.get(_BAKE_TARGET_NODE)
+    node = node_tree.nodes.get(BAKE_TARGET_NODE)
     if node is None:
         node = node_tree.nodes.new("ShaderNodeTexImage")
-        node.name = _BAKE_TARGET_NODE
+        node.name = BAKE_TARGET_NODE
         node.location = (-900, -500)
 
     node.image = image
@@ -71,7 +71,7 @@ def _emit_rewire(material, input_name):
         return None
 
     emit = node_tree.nodes.new("ShaderNodeEmission")
-    emit.name = _BAKE_EMIT_NODE
+    emit.name = BAKE_EMIT_NODE
     emit.location = (-300, -500)
 
     socket = principled.inputs[input_name]
@@ -138,7 +138,7 @@ def _retrieve_bakeable_materials(obj):
 
 def _build_final_material(obj, images):
 
-    material = bpy.data.materials.new(_EXPORT_MESH_NAME + "_Baked")
+    material = bpy.data.materials.new(EXPORT_MESH_NAME + "_Baked")
     material.use_nodes = True
 
     node_tree = material.node_tree
@@ -236,7 +236,7 @@ def bake_materials(context, obj, props) -> str:
         for key, label, pass_type, rewire_input, non_color in channels:
 
             image = _new_bake_image(
-                f"{_EXPORT_MESH_NAME}_{label}",
+                f"{EXPORT_MESH_NAME}_{label}",
                 size,
                 non_color,
             )
@@ -262,7 +262,7 @@ def bake_materials(context, obj, props) -> str:
             images[key] = image
     finally:
         for material in _retrieve_bakeable_materials(obj):
-            node = material.node_tree.nodes.get(_BAKE_TARGET_NODE)
+            node = material.node_tree.nodes.get(BAKE_TARGET_NODE)
             if node:
                 material.node_tree.nodes.remove(node)
 
