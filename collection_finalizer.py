@@ -2,9 +2,10 @@ import logging
 
 import bpy
 
-logger = logging.getLogger(__name__)
+from .bake_materials import bake_materials
+from .constants import _EXPORT_MESH_NAME
 
-_EXPORT_MESH_NAME = "EXPORT_MESH"
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------
@@ -22,6 +23,47 @@ class FinalizerProperties(bpy.types.PropertyGroup):
         description="Include objects from child collections",
         default=True,
         ) # type: ignore
+    bake_resolution: bpy.props.IntProperty(
+        name="Bake Resolution",
+        description="Width and height of the baked textures in pixels",
+        default=2048,
+        min=16,
+        max=8192,
+        ) # type: ignore
+    bake_base_color: bpy.props.BoolProperty(
+        name="Base Color",
+        default=True,
+        ) # type: ignore
+    bake_roughness: bpy.props.BoolProperty(
+        name="Roughness",
+        default=True,
+        ) # type: ignore
+    bake_metallic: bpy.props.BoolProperty(
+        name="Metallic",
+        default=True,
+        ) # type: ignore
+    bake_normal: bpy.props.BoolProperty(
+        name="Normal",
+        default=True,
+        ) # type: ignore
+    bake_emission: bpy.props.BoolProperty(
+        name="Emission",
+        default=True,
+        ) # type: ignore
+    uv_margin: bpy.props.FloatProperty(
+        name="UV Margin",
+        description="Spacing between UV islands in the bake atlas",
+        default=0.02,
+        min=0.0,
+        max=1.0,
+        ) # type: ignore
+    save_textures_dir: bpy.props.StringProperty(
+        name="Save Textures To",
+        description="Optional folder to also write baked textures to disk (needed for FBX). Textures are always packed into the .blend file.",
+        subtype='DIR_PATH',
+        default="",
+        ) # type: ignore
+
 
 
 # ------------------------------------------------------------
@@ -29,12 +71,15 @@ class FinalizerProperties(bpy.types.PropertyGroup):
 # ------------------------------------------------------------
 
 class FINALIZER_OT_build_mesh(bpy.types.Operator):
-
     bl_idname = "finalizer_tools.build_mesh"
     bl_label = "Finalize Collection to Export Mesh"
     bl_description = "Duplicate objects, apply modifiers, and join"
 
-    def execute(self, context: bpy.types.Context):
+    def execute(self, context: bpy.types.Context|None):
+
+        if context is None:
+            self.report({'ERROR'}, "Context is None")
+            return {'CANCELLED'}
 
         props = context.scene.finalizer_tools
 
@@ -57,7 +102,6 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
                 old,
                 do_unlink=True
             )
-
 
         # "[:]" necessary to avoid runtime errors while iterationg over all_objects.
         # See https://docs.blender.org/api/current/info_gotchas_crashes.html#collection-objects
@@ -106,7 +150,8 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
                         modifier=mod.name
                     )
                 except Exception as e:
-                    logger.error(e)
+                    self.report({'ERROR'}, "Some modifiers could not be applied: " + str(e))
+                    return {'CANCELLED'}
 
             obj.select_set(False)
 
@@ -129,9 +174,18 @@ class FINALIZER_OT_build_mesh(bpy.types.Operator):
         export_obj.name = _EXPORT_MESH_NAME
 
 
+        # Bake materials
+
+        try:
+            bake_message = bake_materials(context, export_obj, props)
+        except Exception as e:
+            self.report({'ERROR'}, "Baking failed: " + str(e))
+            return {'CANCELLED'}
+
+
         self.report(
             {'INFO'},
-            "Export mesh created"
+            "Export mesh created. " + bake_message
         )
 
         return {'FINISHED'}
@@ -166,6 +220,21 @@ class FINALIZER_PT_panel(bpy.types.Panel):
             props,
             "recursive"
         )
+
+        bake_box = layout.box()
+        bake_box.label(text="Bake Maps")
+
+        row = bake_box.row(align=True)
+        row.prop(props, "bake_base_color", toggle=True)
+        row.prop(props, "bake_metallic", toggle=True)
+        row.prop(props, "bake_roughness", toggle=True)
+        row = bake_box.row(align=True)
+        row.prop(props, "bake_normal", toggle=True)
+        row.prop(props, "bake_emission", toggle=True)
+
+        bake_box.prop(props, "bake_resolution")
+        bake_box.prop(props, "uv_margin")
+        bake_box.prop(props, "save_textures_dir")
 
         layout.operator(
             "finalizer_tools.build_mesh",
